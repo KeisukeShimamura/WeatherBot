@@ -62,7 +62,8 @@ namespace WeatherBot.Dialogs
         private static AdaptiveCard GetCard(WeatherModel model)
         {
             var card = new AdaptiveCard();
-            AddCurrentWeather(model, card);
+            //AddCurrentWeather(model, card);
+            AddWeather(model, card);
             return card;
         }
 
@@ -106,5 +107,68 @@ namespace WeatherBot.Dialogs
             mainColumn.Items.Add(mainImage);
         }
 
+        private static void AddTextBlock(Column column, string text, TextSize size, HorizontalAlignment alignment)
+        {
+            column.Items.Add(new TextBlock()
+            {
+                Text = text,
+                Size = size,
+                HorizontalAlignment = alignment
+            });
+        }
+        private static void AddImage(Column column, string url, ImageSize size, HorizontalAlignment alignment)
+        {
+            column.Items.Add(new AdaptiveCards.Image()
+            {
+                Url = url,
+                Size = size,
+                HorizontalAlignment = alignment
+            });
+        }
+
+        private static void AddWeather(WeatherModel model, AdaptiveCard card)
+        {
+            // タイトル作成
+            var titleColumnSet = new ColumnSet();
+            card.Body.Add(titleColumnSet);
+
+            var titleColumn = new Column();
+            titleColumnSet.Columns.Add(titleColumn);
+            AddTextBlock(titleColumn, $"{model.location.city} の天気", TextSize.ExtraLarge, HorizontalAlignment.Center);
+
+            // 本文作成
+            // 天気情報をセット
+            var mainColumnSet = new ColumnSet();
+            card.Body.Add(mainColumnSet);
+
+            foreach (var item in model.forecasts)
+            {
+                var mainColumn = new Column();
+                mainColumnSet.Columns.Add(mainColumn);
+
+                // 天気データの取得と加工
+                string day = item.dateLabel;
+                string date = DateTime.Parse(item.date).Date.ToString("M/d");
+
+                // temperature が null の場合は "--" に変換
+                string maxTemp, minTemp;
+                try
+                {
+                    maxTemp = item.temperature.max.celsius;
+                    minTemp = item.temperature.min.celsius;
+                }
+                catch
+                {
+                    maxTemp = "--";
+                    minTemp = "--";
+                }
+
+                // データのセット
+                AddTextBlock(mainColumn, $"{day}({ date})", TextSize.Large, HorizontalAlignment.Center);
+                AddTextBlock(mainColumn, $"{maxTemp} / {minTemp} °C", TextSize.Medium, HorizontalAlignment.Center);
+                AddImage(mainColumn, item.image.url, ImageSize.Medium, HorizontalAlignment.Center);
+            }
+
+        }
     }
 }
